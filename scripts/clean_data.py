@@ -9,7 +9,6 @@ for p in [current_dir, parent_dir]:
         sys.path.insert(0, p)
 
 import spark_util
-from pyspark.sql.functions import col, approx_count_distinct, explode, array, struct, lit, udf
 
 
 def run_clean():
@@ -26,6 +25,8 @@ def run_clean():
 
     spark = spark_util.getOrCreateSparkSession("Clean flights data", submit_args)
     spark.sparkContext.setLogLevel("INFO")
+
+    from pyspark.sql.functions import col, approx_count_distinct, explode, array, struct, lit, udf
 
     # 1. Read merged dataset
     data_location = "s3a://flights-data/flights/*.parquet"

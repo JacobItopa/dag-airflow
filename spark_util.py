@@ -5,13 +5,18 @@ import time
 import subprocess
 
 
-# Ensure JAVA_HOME is set in modern JupyterLab
-if "JAVA_HOME" not in os.environ and os.path.exists("/opt/conda"):
-    os.environ["JAVA_HOME"] = "/opt/conda"
-
-# Get all installed packages as installed_packages
-reqs = subprocess.check_output([sys.executable, '-m', 'pip', 'freeze'])
-installed_packages = [r.decode().split('==')[0] for r in reqs.split()]
+# Robust JAVA_HOME resolution
+if "JAVA_HOME" not in os.environ:
+    if os.path.exists("/opt/conda/bin/java"):
+        os.environ["JAVA_HOME"] = "/opt/conda"
+    else:
+        try:
+            java_path = subprocess.run(["which", "java"], capture_output=True, text=True).stdout.strip()
+            if java_path and os.path.exists(java_path):
+                real_java = os.path.realpath(java_path)
+                os.environ["JAVA_HOME"] = os.path.dirname(os.path.dirname(real_java))
+        except Exception:
+            pass
 
 
 def install(package):
@@ -111,10 +116,11 @@ def configure_minio_s3a(spark):
 def getOrCreateSparkSession(application_name, submit_args="", log_level="INFO"):
     # Creates a Spark session from a given Spark application name and optional submit_args
 
-    if "pyspark" not in installed_packages:
+    try:
+        from pyspark.sql import SparkSession
+    except ImportError:
         install("pyspark")
-
-    from pyspark.sql import SparkSession
+        from pyspark.sql import SparkSession
 
     print("Initializing environment variables for Spark")
     init_environment(submit_args)

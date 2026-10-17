@@ -31,7 +31,9 @@ with DAG(
         image='quay.io/jupyter/pyspark-notebook:latest',
         cmds=['/bin/bash', '-c'],
         arguments=[
-            'pip install -q psycopg2-binary minio && '
+            'export PATH="/opt/conda/bin:$PATH" && '
+            'python -m pip install -q pyspark psycopg2-binary minio && '
+            'rm -rf /tmp/app && '
             'git clone --depth 1 https://github.com/JacobItopa/dag-airflow.git /tmp/app && '
             'cd /tmp/app && '
             'python scripts/merge_data.py'
@@ -49,7 +51,9 @@ with DAG(
         image='quay.io/jupyter/pyspark-notebook:latest',
         cmds=['/bin/bash', '-c'],
         arguments=[
-            'pip install -q psycopg2-binary minio && '
+            'export PATH="/opt/conda/bin:$PATH" && '
+            'python -m pip install -q pyspark psycopg2-binary minio && '
+            'rm -rf /tmp/app && '
             'git clone --depth 1 https://github.com/JacobItopa/dag-airflow.git /tmp/app && '
             'cd /tmp/app && '
             'python scripts/clean_data.py'

@@ -9,7 +9,6 @@ for p in [current_dir, parent_dir]:
         sys.path.insert(0, p)
 
 import spark_util
-from pyspark.sql.functions import broadcast, col
 
 
 def run_merge():
@@ -26,6 +25,8 @@ def run_merge():
 
     spark = spark_util.getOrCreateSparkSession("Enrich flights data", submit_args)
     spark.sparkContext.setLogLevel("INFO")
+
+    from pyspark.sql.functions import broadcast, col
 
     # 1. Read flights from PostgreSQL
     print("Reading flights table from PostgreSQL (pg-flights-data:5432)...")
