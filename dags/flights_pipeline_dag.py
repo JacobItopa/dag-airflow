@@ -20,7 +20,7 @@ with DAG(
     'flights_data_pipeline',
     default_args=default_args,
     description='Automated Spark data pipeline: extracts from PostgreSQL, enriches from MinIO, cleans, and stores Parquet',
-    schedule_interval=None,  # Trigger on-demand or set to '@daily'
+    schedule_interval='@daily',
     catchup=False,
     tags=['mlops', 'chapter09', 'flights', 'spark'],
 ) as dag:
