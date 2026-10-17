@@ -74,8 +74,8 @@ def init_environment(submit_args):
         "--conf spark.shuffle.io.serverThreads=1 "
         "--conf spark.shuffle.io.clientThreads=1 "
         "--conf spark.cleaner.referenceTracking.blocking=false "
-        "--conf spark.hadoop.fs.s3a.threads.max=2 "
-        "--conf spark.hadoop.fs.s3a.connection.maximum=5 "
+        "--conf spark.hadoop.fs.s3a.threads.max=20 "
+        "--conf spark.hadoop.fs.s3a.connection.maximum=40 "
         "--conf spark.hadoop.fs.s3a.fast.upload.buffer=disk "
     )
     submit_args = f"{thread_safety_confs} {submit_args}"
@@ -110,9 +110,9 @@ def configure_minio_s3a(spark):
         hadoop_conf.set("fs.s3a.connection.ssl.enabled", "false")
         hadoop_conf.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
         
-        # Prevent thread explosion (pthread_create EAGAIN) in Docker/K8s containers
-        hadoop_conf.set("fs.s3a.threads.max", "2")
-        hadoop_conf.set("fs.s3a.connection.maximum", "5")
+        # S3A TransferManager requires at least 20 threads to avoid multipart upload deadlock
+        hadoop_conf.set("fs.s3a.threads.max", "20")
+        hadoop_conf.set("fs.s3a.connection.maximum", "40")
         
         # Buffer uploads to local container disk instead of consuming JVM heap memory
         hadoop_conf.set("fs.s3a.fast.upload.buffer", "disk")

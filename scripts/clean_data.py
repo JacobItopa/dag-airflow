@@ -20,7 +20,6 @@ def run_clean():
         "--conf spark.hadoop.fs.s3a.secret.key=minio123 "
         "--conf spark.hadoop.fs.s3a.path.style.access=true "
         "--conf spark.hadoop.fs.s3a.impl=org.apache.hadoop.fs.s3a.S3AFileSystem "
-        "--conf spark.hadoop.fs.s3a.multipart.size=104857600 "
         "--packages org.apache.hadoop:hadoop-aws:3.3.4,com.amazonaws:aws-java-sdk-bundle:1.12.262,org.postgresql:postgresql:42.3.3"
     )
 
@@ -65,15 +64,12 @@ def run_clean():
     print("Calculating DELAYED target label (departure_delay >= 15 min)...")
     delay_threshold = 15
 
-    @udf("integer")
-    def is_delayed(departure_delay, cancelled):
-        if cancelled == 1:
-            return 0
-        if departure_delay is not None and departure_delay >= delay_threshold:
-            return 1
-        return 0
+    from pyspark.sql.functions import when
+    is_delayed_expr = when(col("cancelled") == 1, 0) \
+        .when((col("departure_delay").isNotNull()) & (col("departure_delay") >= delay_threshold), 1) \
+        .otherwise(0)
 
-    df_clean = df_clean.withColumn("DELAYED", is_delayed(df_clean.departure_delay, df_clean.cancelled))
+    df_clean = df_clean.withColumn("DELAYED", is_delayed_expr)
     df_clean.select("month", "day", "flight_number", "departure_delay", "cancelled", "DELAYED").show(50)
 
     # Write the physical data to the same S3 bucket under the flights-clean path.
@@ -85,7 +81,8 @@ def run_clean():
         .option("header", "true") \
         .format("parquet").save(output_location)
 
-    final_count = df_clean.count()
+    # Read Parquet metadata directly to verify count instantly without re-evaluating the DAG
+    final_count = spark.read.parquet(output_location).count()
     print(f"=== Clean Flights Data Completed Successfully! Final clean records: {final_count} ===")
     spark.stop()
 

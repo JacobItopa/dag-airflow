@@ -64,7 +64,7 @@ def run_merge():
         .option("header", "true") \
         .format("parquet").save(output_location)
 
-    merged_count = df_flights.count()
+    merged_count = spark.read.parquet(output_location).count()
     print(f"=== Merge Flights Data Completed Successfully! Saved records: {merged_count} ===")
     spark.stop()
 
