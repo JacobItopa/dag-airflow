@@ -58,14 +58,14 @@ def run_merge():
 
     # 5. Write to MinIO S3A
     output_location = "s3a://flights-data/flights"
-    print(f"Streaming write to {output_location} in Parquet format...")
+
+    #df_flights.cache()
     df_flights.write.mode("overwrite") \
         .option("header", "true") \
         .format("parquet").save(output_location)
 
-    # 6. Verify count
-    saved_count = spark.read.parquet(output_location).count()
-    print(f"=== Merge Flights Data Completed Successfully! Saved records: {saved_count} ===")
+    merged_count = df_flights.count()
+    print(f"=== Merge Flights Data Completed Successfully! Saved records: {merged_count} ===")
     spark.stop()
 
 
