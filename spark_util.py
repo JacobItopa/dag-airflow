@@ -51,8 +51,8 @@ def get_driver_host_ip():
 def init_environment(submit_args):
     # Prepares Spark related configuration through PYSPARK_SUBMIT_ARGS env variable
     cluster_name = get_cluster_name()
-    # Default to local[2] instead of local[*] to limit concurrent S3A writers inside the container
-    master_target = os.environ.get('SPARK_MASTER', 'local[2]')
+    # Default to local[1] to minimize thread creation in containerized Kubernetes environments
+    master_target = os.environ.get('SPARK_MASTER', 'local[1]')
     
     # If the user explicitly sets SPARK_MASTER=cluster, connect to standalone master
     if master_target == "cluster":
@@ -60,19 +60,22 @@ def init_environment(submit_args):
     else:
         master_url = master_target
 
-    # Ensure optimal driver memory and JVM thread settings for container environments
+    # Ensure optimal driver memory for 5.8M row dataset
     if "--driver-memory" not in submit_args and "spark.driver.memory" not in submit_args:
         submit_args = f"--driver-memory 2g {submit_args}"
 
-    # Limit thread stack size and thread pool explosion to prevent EAGAIN / OutOfMemoryError
+    # Strict thread and resource limits to prevent OS-level EAGAIN / thread exhaustion
     thread_safety_confs = (
+        "--conf spark.ui.enabled=false "
         "--conf spark.driver.extraJavaOptions=-Xss512k "
         "--conf spark.executor.extraJavaOptions=-Xss512k "
-        "--conf spark.sql.shuffle.partitions=10 "
-        "--conf spark.default.parallelism=2 "
+        "--conf spark.sql.shuffle.partitions=4 "
+        "--conf spark.default.parallelism=1 "
+        "--conf spark.shuffle.io.serverThreads=1 "
+        "--conf spark.shuffle.io.clientThreads=1 "
         "--conf spark.cleaner.referenceTracking.blocking=false "
-        "--conf spark.hadoop.fs.s3a.threads.max=4 "
-        "--conf spark.hadoop.fs.s3a.connection.maximum=10 "
+        "--conf spark.hadoop.fs.s3a.threads.max=2 "
+        "--conf spark.hadoop.fs.s3a.connection.maximum=5 "
         "--conf spark.hadoop.fs.s3a.fast.upload.buffer=disk "
     )
     submit_args = f"{thread_safety_confs} {submit_args}"
@@ -108,8 +111,8 @@ def configure_minio_s3a(spark):
         hadoop_conf.set("fs.s3a.aws.credentials.provider", "org.apache.hadoop.fs.s3a.SimpleAWSCredentialsProvider")
         
         # Prevent thread explosion (pthread_create EAGAIN) in Docker/K8s containers
-        hadoop_conf.set("fs.s3a.threads.max", "10")
-        hadoop_conf.set("fs.s3a.connection.maximum", "20")
+        hadoop_conf.set("fs.s3a.threads.max", "2")
+        hadoop_conf.set("fs.s3a.connection.maximum", "5")
         
         # Buffer uploads to local container disk instead of consuming JVM heap memory
         hadoop_conf.set("fs.s3a.fast.upload.buffer", "disk")

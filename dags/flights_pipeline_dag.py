@@ -31,6 +31,7 @@ with DAG(
         image='quay.io/jupyter/pyspark-notebook:latest',
         cmds=['/bin/bash', '-c'],
         arguments=[
+            'ulimit -u 65535 2>/dev/null || true && '
             'export PATH="/opt/conda/bin:$PATH" && '
             'export _JAVA_OPTIONS="-Xss512k" && '
             'export MALLOC_ARENA_MAX=2 && '
@@ -40,6 +41,7 @@ with DAG(
             'cd /tmp/app && '
             'python scripts/merge_data.py'
         ],
+        security_context={'run_as_user': 0},
         labels={'app': 'spark-merge-task'},
         name='spark-merge-flights',
         task_id='merge_flights_data',
@@ -53,6 +55,7 @@ with DAG(
         image='quay.io/jupyter/pyspark-notebook:latest',
         cmds=['/bin/bash', '-c'],
         arguments=[
+            'ulimit -u 65535 2>/dev/null || true && '
             'export PATH="/opt/conda/bin:$PATH" && '
             'export _JAVA_OPTIONS="-Xss512k" && '
             'export MALLOC_ARENA_MAX=2 && '
@@ -62,6 +65,7 @@ with DAG(
             'cd /tmp/app && '
             'python scripts/clean_data.py'
         ],
+        security_context={'run_as_user': 0},
         labels={'app': 'spark-clean-task'},
         name='spark-clean-flights',
         task_id='clean_flights_data',
