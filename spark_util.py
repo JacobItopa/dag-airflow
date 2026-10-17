@@ -60,9 +60,22 @@ def init_environment(submit_args):
     else:
         master_url = master_target
 
-    # Ensure sufficient driver memory for 5.8M row dataset (default is 1g)
+    # Ensure optimal driver memory and JVM thread settings for container environments
     if "--driver-memory" not in submit_args and "spark.driver.memory" not in submit_args:
-        submit_args = f"--driver-memory 4g {submit_args}"
+        submit_args = f"--driver-memory 2g {submit_args}"
+
+    # Limit thread stack size and thread pool explosion to prevent EAGAIN / OutOfMemoryError
+    thread_safety_confs = (
+        "--conf spark.driver.extraJavaOptions=-Xss512k "
+        "--conf spark.executor.extraJavaOptions=-Xss512k "
+        "--conf spark.sql.shuffle.partitions=10 "
+        "--conf spark.default.parallelism=2 "
+        "--conf spark.cleaner.referenceTracking.blocking=false "
+        "--conf spark.hadoop.fs.s3a.threads.max=4 "
+        "--conf spark.hadoop.fs.s3a.connection.maximum=10 "
+        "--conf spark.hadoop.fs.s3a.fast.upload.buffer=disk "
+    )
+    submit_args = f"{thread_safety_confs} {submit_args}"
 
     # PySpark 3.4/3.5 bundles Hadoop 3.3.x runtime libraries.
     # Legacy hadoop-aws:3.2.0 causes NoSuchMethodError on SemaphoredDelegatingExecutor during S3A write operations.

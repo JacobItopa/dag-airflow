@@ -32,6 +32,8 @@ with DAG(
         cmds=['/bin/bash', '-c'],
         arguments=[
             'export PATH="/opt/conda/bin:$PATH" && '
+            'export _JAVA_OPTIONS="-Xss512k" && '
+            'export MALLOC_ARENA_MAX=2 && '
             'python -m pip install -q pyspark psycopg2-binary minio && '
             'rm -rf /tmp/app && '
             'git clone --depth 1 https://github.com/JacobItopa/dag-airflow.git /tmp/app && '
@@ -52,6 +54,8 @@ with DAG(
         cmds=['/bin/bash', '-c'],
         arguments=[
             'export PATH="/opt/conda/bin:$PATH" && '
+            'export _JAVA_OPTIONS="-Xss512k" && '
+            'export MALLOC_ARENA_MAX=2 && '
             'python -m pip install -q pyspark psycopg2-binary minio && '
             'rm -rf /tmp/app && '
             'git clone --depth 1 https://github.com/JacobItopa/dag-airflow.git /tmp/app && '
