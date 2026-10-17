@@ -29,7 +29,7 @@ def run_clean():
     from pyspark.sql.functions import col, approx_count_distinct, explode, array, struct, lit, udf
 
     # 1. Read merged dataset
-    data_location = "s3a://flights-data/flights/*.parquet"
+    data_location = "s3a://flights-data/flights"
     print(f"Reading merged dataset from {data_location}...")
     df_flights = spark.read.parquet(data_location)
 
@@ -67,6 +67,7 @@ def run_clean():
     # 5. Write cleaned dataset to MinIO
     output_location = "s3a://flights-data/flights-clean"
     print(f"Streaming write to {output_location} in Parquet format...")
+    df_clean.cache()
     df_clean.write.mode("overwrite") \
         .option("header", "true") \
         .format("parquet").save(output_location)

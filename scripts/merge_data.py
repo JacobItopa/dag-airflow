@@ -44,33 +44,17 @@ def run_merge():
     df_airlines = spark.read.format("csv").option("header", "true").load("s3a://airport-data/airlines.csv")
     df_airports = spark.read.format("csv").option("header", "true").load("s3a://airport-data/airports.csv")
 
-    # 3. Rename columns for clean join
-    df_airlines = df_airlines.withColumnRenamed("IATA_CODE", "AL_IATA_CODE")
-    df_o_airports = df_airports.selectExpr(
-        "IATA_CODE as ORIG_IATA_CODE",
-        "AIRPORT as ORIG_AIRPORT",
-        "CITY as ORIG_CITY",
-        "STATE as ORIG_STATE",
-        "COUNTRY as ORIG_COUNTRY",
-        "LATITUDE as ORIG_LATITUDE",
-        "LONGITUDE as ORIG_LONGITUDE"
-    )
-    df_d_airports = df_airports.selectExpr(
-        "IATA_CODE as DEST_IATA_CODE",
-        "AIRPORT as DEST_AIRPORT",
-        "CITY as DEST_CITY",
-        "STATE as DEST_STATE",
-        "COUNTRY as DEST_COUNTRY",
-        "LATITUDE as DEST_LATITUDE",
-        "LONGITUDE as DEST_LONGITUDE"
-    )
+    # 3. Rename columns with prefixes for clean, unambiguous joins
+    df_airlines = df_airlines.select([col(c).alias("AL_" + c) for c in df_airlines.columns])
+    df_o_airports = df_airports.select([col(c).alias("ORIG_" + c) for c in df_airports.columns])
+    df_d_airports = df_airports.select([col(c).alias("DEST_" + c) for c in df_airports.columns])
 
-    # 4. Join datasets
+    # 4. Join datasets using explicit DataFrame column references
     print("Joining flights with airlines, origin airports, and destination airports...")
     df_flights = df_flights \
-        .join(broadcast(df_airlines), col("airline") == col("AL_IATA_CODE")) \
-        .join(broadcast(df_o_airports), col("origin_airport") == col("ORIG_IATA_CODE")) \
-        .join(broadcast(df_d_airports), col("destination_airport") == col("DEST_IATA_CODE"))
+        .join(broadcast(df_airlines), df_flights.airline == df_airlines.AL_IATA_CODE) \
+        .join(broadcast(df_o_airports), df_flights.origin_airport == df_o_airports.ORIG_IATA_CODE) \
+        .join(broadcast(df_d_airports), df_flights.destination_airport == df_d_airports.DEST_IATA_CODE)
 
     # 5. Write to MinIO S3A
     output_location = "s3a://flights-data/flights"
