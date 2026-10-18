@@ -101,10 +101,14 @@ def configure_minio_s3a(spark):
     - Heap exhaustion during multipart upload (buffering to disk instead of RAM)
     """
     try:
-        hadoop_conf = spark.sparkContext._jsc.hadoopConfiguration()
-        hadoop_conf.set("fs.s3a.endpoint", "http://minio-ml-workshop:9000")
-        hadoop_conf.set("fs.s3a.access.key", "minio")
-        hadoop_conf.set("fs.s3a.secret.key", "minio123")
+        # Dynamically resolve MinIO endpoint and credentials from environment variables with sensible defaults
+        minio_endpoint = os.environ.get("MINIO_ENDPOINT", os.environ.get("MLFLOW_S3_ENDPOINT_URL", "http://minio-ml-workshop:9000"))
+        minio_access_key = os.environ.get("AWS_ACCESS_KEY_ID", os.environ.get("MINIO_ACCESS_KEY", "minio"))
+        minio_secret_key = os.environ.get("AWS_SECRET_ACCESS_KEY", os.environ.get("MINIO_SECRET_KEY", "minio123"))
+
+        hadoop_conf.set("fs.s3a.endpoint", minio_endpoint)
+        hadoop_conf.set("fs.s3a.access.key", minio_access_key)
+        hadoop_conf.set("fs.s3a.secret.key", minio_secret_key)
         hadoop_conf.set("fs.s3a.path.style.access", "true")
         hadoop_conf.set("fs.s3a.impl", "org.apache.hadoop.fs.s3a.S3AFileSystem")
         hadoop_conf.set("fs.s3a.connection.ssl.enabled", "false")
