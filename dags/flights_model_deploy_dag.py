@@ -16,7 +16,6 @@ Pipeline Architecture:
 """
 
 from datetime import datetime, timedelta
-import os
 from airflow import DAG
 from airflow.models import Variable
 
@@ -27,7 +26,9 @@ except ImportError:
 
 # =============================================================================
 # Deployment Configuration
-# You can set these in Airflow UI -> Admin -> Variables, or edit them below.
+# Configured in Airflow UI -> Admin -> Variables:
+#   DOCKERHUB_USER
+#   DOCKERHUB_PASSWORD
 # =============================================================================
 DOCKERHUB_USER = Variable.get("DOCKERHUB_USER", default_var="YOUR_DOCKERHUB_USERNAME")
 DOCKERHUB_PASSWORD = Variable.get("DOCKERHUB_PASSWORD", default_var="YOUR_DOCKERHUB_TOKEN_OR_PASSWORD")
@@ -69,19 +70,18 @@ with DAG(
         arguments=[
             'set -e && '
             'echo "=== Downloading serving codebase from repository ===" && '
-            'rm -rf /tmp/app && '
+            'rm -rf /tmp/app /tmp/repo.tar.gz /tmp/Machine-Learning* && '
             'if command -v git >/dev/null 2>&1; then '
             '  git clone --depth 1 https://github.com/JacobItopa/Machine-Learning-on-Kubernetes.git /tmp/app; '
             'else '
-            '  python3 -c "import urllib.request, tarfile, os, shutil; '
+            '  python3 -c "import urllib.request, tarfile; '
             'urllib.request.urlretrieve(\'https://github.com/JacobItopa/Machine-Learning-on-Kubernetes/archive/refs/heads/main.tar.gz\', \'/tmp/repo.tar.gz\'); '
-            'tarfile.open(\'/tmp/repo.tar.gz\').extractall(\'/tmp/extracted\'); '
-            'src = [os.path.join(\'/tmp/extracted\', d) for d in os.listdir(\'/tmp/extracted\') if \'Machine-Learning\' in d][0]; '
-            'shutil.copytree(src, \'/tmp/app\', dirs_exist_ok=True)"; '
+            'tarfile.open(\'/tmp/repo.tar.gz\').extractall(\'/tmp\')" && '
+            '  mv /tmp/Machine-Learning-on-Kubernetes-main /tmp/app; '
             'fi && '
             'cd /tmp/app/chapter10/model_deploy_pipeline/model_build_push && '
             'echo "=== Running build_push_image.py to download artifacts and invoke Kaniko ===" && '
-            'python build_push_image.py'
+            'python3 build_push_image.py'
         ],
         env_vars={
             'MODEL_NAME': MODEL_NAME,
@@ -111,19 +111,18 @@ with DAG(
         arguments=[
             'set -e && '
             'echo "=== Downloading deployment templates from repository ===" && '
-            'rm -rf /tmp/app && '
+            'rm -rf /tmp/app /tmp/repo.tar.gz /tmp/Machine-Learning* && '
             'if command -v git >/dev/null 2>&1; then '
             '  git clone --depth 1 https://github.com/JacobItopa/Machine-Learning-on-Kubernetes.git /tmp/app; '
             'else '
-            '  python3 -c "import urllib.request, tarfile, os, shutil; '
+            '  python3 -c "import urllib.request, tarfile; '
             'urllib.request.urlretrieve(\'https://github.com/JacobItopa/Machine-Learning-on-Kubernetes/archive/refs/heads/main.tar.gz\', \'/tmp/repo.tar.gz\'); '
-            'tarfile.open(\'/tmp/repo.tar.gz\').extractall(\'/tmp/extracted\'); '
-            'src = [os.path.join(\'/tmp/extracted\', d) for d in os.listdir(\'/tmp/extracted\') if \'Machine-Learning\' in d][0]; '
-            'shutil.copytree(src, \'/tmp/app\', dirs_exist_ok=True)"; '
+            'tarfile.open(\'/tmp/repo.tar.gz\').extractall(\'/tmp\')" && '
+            '  mv /tmp/Machine-Learning-on-Kubernetes-main /tmp/app; '
             'fi && '
             'cd /tmp/app/chapter10/model_deploy_pipeline/model_deploy && '
             'echo "=== Running deploy_model.py to render and apply SeldonDeployment ===" && '
-            'python deploy_model.py'
+            'python3 deploy_model.py'
         ],
         env_vars={
             'MODEL_NAME': MODEL_NAME,
