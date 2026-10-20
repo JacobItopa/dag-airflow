@@ -33,7 +33,7 @@ except ImportError:
 DOCKERHUB_USER = Variable.get("DOCKERHUB_USER", default_var="YOUR_DOCKERHUB_USERNAME")
 DOCKERHUB_PASSWORD = Variable.get("DOCKERHUB_PASSWORD", default_var="YOUR_DOCKERHUB_TOKEN_OR_PASSWORD")
 
-MODEL_NAME = Variable.get("MODEL_NAME", default_var="flights-ontime")
+MODEL_NAME = Variable.get("MODEL_NAME", default_var="flighs-ontime")
 MODEL_VERSION = Variable.get("MODEL_VERSION", default_var="1")
 IMAGE_TAG = Variable.get("MODEL_IMAGE_TAG", default_var="1.0.0")
 
